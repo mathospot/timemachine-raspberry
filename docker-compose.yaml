@@ -1,0 +1,24 @@
+services:
+  
+  samba:
+    image: dperson/samba
+    container_name: samba_server
+    restart: always
+    volumes:
+      - /mnt/storage/timemachine:/timemachine
+    environment:
+      - TZ='Europe/Madrid'
+    ports:
+      - "139:139"
+      - "445:445"
+    command: "-u 'your_user;Your_Password1234' -s 'timemachine;/timemachine;yes;no;no;your_user'"
+
+  avahi:
+    image: ydkn/avahi
+    restart: always
+    network_mode: host
+    volumes:
+      - ~/raspberry-repo/avahi_services:/etc/avahi/services
+
+networks:
+  default:
