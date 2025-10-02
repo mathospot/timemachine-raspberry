@@ -1,0 +1,52 @@
+# Example smb.conf tuned for macOS Time Machine
+# Copy to the container's /etc/samba/smb.conf or use as a reference to build a custom image.
+
+[global]
+   workgroup = WORKGROUP
+   server string = TimeMachine-Samba
+   netbios name = TIMEMACHINE
+   log file = /var/log/samba/log.%m
+   max log size = 1000
+   panic action = /usr/share/samba/panic-action %d
+   server role = standalone server
+
+   # Performance / compatibility
+   obey pam restrictions = yes
+   unix password sync = yes
+   passwd program = /usr/bin/passwd %u
+   passwd chat = *New*password* %n\n *Retype*new*password* %n\n
+
+   # Required for good macOS SMB/Time Machine compatibility
+   vfs objects = catia fruit streams_xattr
+   fruit:metadata = stream
+   fruit:resource = file
+   fruit:model = TimeCapsule
+   fruit:time machine = yes
+   fruit:eventlog = syslog
+
+   # Extended attributes and ACLs
+   ea support = yes
+   map acl inherit = yes
+   store dos attributes = yes
+
+   # Recommended
+   directory mask = 0775
+   create mask = 0664
+
+[timemachine]
+   comment = Time Machine Backup
+   path = /timemachine
+   read only = no
+   browseable = yes
+   guest ok = no
+   # Restrict to the user you create for Samba
+   valid users = timemachine
+   vfs objects = catia fruit streams_xattr
+   fruit:time machine = yes
+   force user = root
+   create mask = 0664
+   directory mask = 0775
+
+# Notes:
+# - Some images may ignore a mounted smb.conf; if so, build a custom image that installs samba and copies this file.
+# - `force user = root` is used here to avoid permission issues with mounted volumes on some setups; prefer matching UID/GID instead.

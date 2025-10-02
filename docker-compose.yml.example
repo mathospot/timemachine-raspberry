@@ -1,0 +1,34 @@
+# Example docker-compose (template). Copy to docker-compose.yml and adjust values or use .env
+version: '3.8'
+
+services:
+  samba:
+    image: "${SAMBA_IMAGE}"
+    container_name: samba_server
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      # Host mount for Time Machine data
+      - ${HOST_MOUNT}:/timemachine
+      # Optional: mount a custom smb.conf if your image reads it
+      - ./smb.conf.example:/etc/samba/smb.conf:ro
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "139:139"
+      - "445:445"
+    # dperson/samba uses a command line to create users/shares; this uses the env vars from .env
+    command: "-u '${SAMBA_USER};${SAMBA_PASS}' -s 'timemachine;/timemachine;yes;no;no;${SAMBA_USER}'"
+
+  avahi:
+    image: ydkn/avahi
+    restart: always
+    network_mode: host
+    volumes:
+      - ${AVAHI_HOST_DIR}:/etc/avahi/services
+
+# Notes:
+# - Keep the .env file outside version control and with restrictive permissions (chmod 600 .env).
+# - If you need full `vfs_fruit` support, consider building a custom Samba image and replacing ${SAMBA_IMAGE}.
+# - Ensure ports 139/445 are only reachable from your LAN (e.g., firewall rules). Do NOT expose them to the internet.

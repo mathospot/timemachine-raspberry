@@ -43,6 +43,46 @@ docker-compose up --build -d
 
 Once configured, macOS will automatically begin backing up to the Raspberry Pi at regular intervals. You can check the status or force a backup through the TimeMachine menu on your macOS device.
 
+## Security and best-practices (important)
+
+- Credentials: do NOT store real passwords in the repository. Use the provided `.env.example` to create a local `.env` file and set `SAMBA_USER` and `SAMBA_PASS`. Keep `.env` out of git and set secure permissions:
+
+```bash
+cp .env.example .env
+chmod 600 .env
+# edit .env and set SAMBA_PASS
+```
+
+- If you need persistent, more secure secrets and orchestration, consider Docker secrets or a system-level secret manager.
+
+- Network: expose SMB ports only on your LAN. If your Raspberry Pi has a public IP, use firewall rules to block 139/445 from the internet.
+
+- Permissions: ensure the host mount point is owned by the UID/GID that Samba inside the container will use, or configure Samba to `force user` appropriately. Example:
+
+```bash
+sudo chown -R 1000:1000 /mnt/storage/timemachine
+```
+
+- `smb.conf`: for best macOS compatibility (Time Machine over SMB) use a Samba configuration with `vfs objects = catia fruit streams_xattr` and `fruit:time machine = yes`. A template `smb.conf.example` is provided in this repo.
+
+## Mounting external disk automatically (fstab example)
+
+Add an entry to `/etc/fstab` so the external disk mounts at boot. Example (replace with the correct UUID and filesystem):
+
+```text
+UUID=YOUR-DRIVE-UUID /mnt/storage/timemachine ext4 defaults,noatime 0 2
+```
+
+You can get the UUID with `lsblk -f` or `blkid` on Linux.
+
+## Files provided as templates
+
+- `.env.example` — environment variables template (copy to `.env` and edit)
+- `smb.conf.example` — Samba configuration tuned for Time Machine (use as reference or mount into the container)
+- `docker-compose.yml.example` — template compose file which reads values from `.env`
+
+If you want, I can add a Dockerfile that builds a custom Samba image with `vfs_fruit` enabled and copies the `smb.conf` into the image. Let me know and I will create it as an optional addition.
+
 ## Contact
 
 For any questions or inquiries, feel free to reach out at mathospot@gmail.com.
